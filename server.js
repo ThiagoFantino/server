@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const port = process.env.PORT || 3000; // Use the provided port or default to 3000
+const port = process.env.PORT || 3000; 
 
 app.use(cors());
 // Middleware to parse JSON request bodies

@@ -9,7 +9,7 @@ app.use(express.json());
 
 // Define a sample route
 app.get('/', (req, res) => {
-  res.json({ message: 'Hola, Express!' }); // Devuelve un objeto JSON
+  res.json({ message: 'Hola, Express!' }); 
 });
 
 // Start the server

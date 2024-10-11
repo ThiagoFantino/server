@@ -14,13 +14,26 @@ datasource db {
 }
 
 model User {
- id Int @id @default(autoincrement())
- nombre String
- apellido String
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  apellido     String
+  calorias     Int      @default(0) // Nuevas propiedades
+  entrenamientos Int     @default(0) // Nuevas propiedades
+  minutos      Int      @default(0) // Nuevas propiedades
 }
 
 model Routine {
-  id         Int       @id @default(autoincrement())
-  name       String
-  image      String
+  id       Int       @id @default(autoincrement())
+  name     String
+  image    String
+  exercises Exercise[] @relation("RoutineExercises")
+}
+
+model Exercise {
+  id       Int     @id @default(autoincrement())
+  name     String
+  image    String
+  sets     Int
+  routineId Int      // Clave foránea
+  routine  Routine @relation("RoutineExercises", fields: [routineId], references: [id])
 }

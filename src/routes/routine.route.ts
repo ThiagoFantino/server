@@ -18,12 +18,22 @@ const RoutineRoute = (prisma: PrismaClient) => {
         name,
         image
       },
-    })
-    res.json(result)
-  })
+    });
+    res.json(result);
+  });
+
+  // Obtener ejercicios de la rutina con ID 1
+  router.get('/:id/exercises', async (req, res) => {
+    const { id } = req.params; // Obtener el id de la rutina desde los parámetros de la URL
+    const exercises = await prisma.exercise.findMany({
+      where: { routineId: Number(id) } // Asegúrate de convertir el id a número
+    });
+    res.json(exercises);
+  });
+  
 
   return router;
-}
+};
 
 export default RoutineRoute;
 

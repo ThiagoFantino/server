@@ -12,15 +12,27 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Crear un nuevo usuario
   router.post('/', async (req, res) => {
-    const { nombre, apellido } = req.body
+    const { nombre, apellido, calorias, entrenamientos, minutos } = req.body; // Incluir las nuevas propiedades
+
     const result = await prisma.user.create({
       data: {
         nombre,
-        apellido
+        apellido,
+        calorias,        // Agregar calorías
+        entrenamientos,   // Agregar entrenamientos
+        minutos,          // Agregar minutos
       },
-    })
-    res.json(result)
+    });
+    
+    res.json(result);
   })
+
+  router.get('/1', async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: 1 }, 
+    });
+    res.json(user)
+  });
 
   return router
 }

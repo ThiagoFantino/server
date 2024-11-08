@@ -30,10 +30,12 @@ model Routine {
 }
 
 model Exercise {
-  id       Int     @id @default(autoincrement())
-  name     String
-  image    String
-  sets     Int
-  routineId Int      // Clave foránea
-  routine  Routine @relation("RoutineExercises", fields: [routineId], references: [id])
+  id         Int     @id @default(autoincrement())
+  name       String
+  image      String
+  sets       Int
+  calorias   Int     @default(0)  // Asignar valor por defecto
+  routineId  Int     // Clave foránea
+  routine    Routine @relation("RoutineExercises", fields: [routineId], references: [id])
 }
+

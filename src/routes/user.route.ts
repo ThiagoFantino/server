@@ -38,7 +38,6 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Obtener un usuario por ID
   router.get('/:id', async (req, res) => {
-    
     const { id } = req.params;
 
     try {
@@ -54,7 +53,6 @@ const UserRoute = (prisma: PrismaClient) => {
   // Actualizar los minutos de un usuario por ID
   router.put('/:id', async (req, res) => {
     const { minutos, entrenamientos, calorias } = req.body;
-
     const { id } = req.params;
 
     try {
@@ -72,9 +70,38 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
+  // Ruta para login (sin bcrypt por ahora)
+  router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+      // Buscar al usuario por el email en la base de datos
+      const user = await prisma.user.findUnique({
+        where: { email: email },
+      });
+
+      if (user) {
+        // Comparar la contraseña recibida con la almacenada (texto plano)
+        if (user.password === password) {
+          // Si las contraseñas coinciden, enviar el ID del usuario
+          console.log('Login exitoso');
+          return res.json({ message: 'Login exitoso', userId: user.id });
+        } else {
+          console.log('Credenciales inválidas');
+          return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+        }
+      } else {
+        console.log('Credenciales inválidas');
+        return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+      }
+    } catch (error) {
+      console.error('Error al verificar el usuario:', error);
+      return res.status(500).json({ error: 'Hubo un problema al verificar las credenciales' });
+    }
+  });
+
   return router;
 };
 
 export default UserRoute;
-
 

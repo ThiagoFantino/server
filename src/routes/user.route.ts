@@ -16,7 +16,7 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Crear un nuevo usuario
   router.post('/signup', async (req, res) => {
-    const { nombre, apellido, calorias, entrenamientos, minutos, email, password } = req.body;
+    const { nombre, apellido, calorias, entrenamientos, tiempo, email, password } = req.body;
 
     try {
       const result = await prisma.user.create({
@@ -25,7 +25,7 @@ const UserRoute = (prisma: PrismaClient) => {
           apellido,
           calorias,
           entrenamientos,
-          minutos,
+          tiempo,
           email,
           password, // Guardar la contraseña tal cual
         },
@@ -50,23 +50,23 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  // Actualizar los minutos de un usuario por ID
+  // Actualizar los tiempo de un usuario por ID
   router.put('/:id', async (req, res) => {
-    const { minutos, entrenamientos, calorias } = req.body;
+    const { tiempo, entrenamientos, calorias } = req.body;
     const { id } = req.params;
 
     try {
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: {
-          minutos, // Actualizar los minutos
+          tiempo, // Actualizar los tiempo
           entrenamientos, // Actualizar los entrenamientos
           calorias,
         },
       });
       res.json(updatedUser);
     } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar los minutos y entrenamientos.' });
+      res.status(500).json({ error: 'Error al actualizar los tiempo y entrenamientos.' });
     }
   });
 

@@ -19,7 +19,7 @@ model User {
   apellido       String
   calorias       Int      @default(0)
   entrenamientos Int      @default(0)
-  minutos        Int      @default(0)
+  tiempo        Int      @default(0)
   email          String   @unique  // Agregamos @unique aquí
   password       String   @default("")
 }

@@ -1,5 +1,6 @@
 import { type PrismaClient } from "@prisma/client";
 import { Router } from "express";
+import bcrypt from "bcryptjs";  // Importar bcrypt
 
 const UserRoute = (prisma: PrismaClient) => {
   const router = Router();
@@ -14,11 +15,15 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  // Crear un nuevo usuario
+  // Crear un nuevo usuario (con encriptación de la contraseña)
   router.post('/signup', async (req, res) => {
     const { nombre, apellido, calorias, entrenamientos, tiempo, email, password } = req.body;
 
     try {
+      // Encriptar la contraseña antes de guardarla
+      const hashedPassword = await bcrypt.hash(password, 10);  // 10 es el número de rondas de encriptación
+
+      // Crear el usuario con la contraseña encriptada
       const result = await prisma.user.create({
         data: {
           nombre,
@@ -27,9 +32,10 @@ const UserRoute = (prisma: PrismaClient) => {
           entrenamientos,
           tiempo,
           email,
-          password, // Guardar la contraseña tal cual
+          password: hashedPassword,  // Guardar la contraseña encriptada
         },
       });
+
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: 'Error al crear el usuario.' });
@@ -59,8 +65,8 @@ const UserRoute = (prisma: PrismaClient) => {
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: {
-          tiempo, // Actualizar los tiempo
-          entrenamientos, // Actualizar los entrenamientos
+          tiempo,
+          entrenamientos,
           calorias,
         },
       });
@@ -70,7 +76,7 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  // Ruta para login (sin bcrypt por ahora)
+  // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -81,8 +87,10 @@ const UserRoute = (prisma: PrismaClient) => {
       });
 
       if (user) {
-        // Comparar la contraseña recibida con la almacenada (texto plano)
-        if (user.password === password) {
+        // Comparar la contraseña proporcionada con la almacenada (encriptada)
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+        if (isPasswordCorrect) {
           // Si las contraseñas coinciden, enviar el ID del usuario
           console.log('Login exitoso');
           return res.json({ message: 'Login exitoso', userId: user.id });
@@ -104,4 +112,3 @@ const UserRoute = (prisma: PrismaClient) => {
 };
 
 export default UserRoute;
-

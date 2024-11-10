@@ -15,7 +15,7 @@ const UserRoute = (prisma: PrismaClient) => {
   });
 
   // Crear un nuevo usuario
-  router.post('/', async (req, res) => {
+  router.post('/signup', async (req, res) => {
     const { nombre, apellido, calorias, entrenamientos, minutos, email, password } = req.body;
 
     try {

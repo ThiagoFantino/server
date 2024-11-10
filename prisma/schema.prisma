@@ -14,13 +14,17 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  nombre       String
-  apellido     String
-  calorias     Int      @default(0) // Nuevas propiedades
-  entrenamientos Int     @default(0) // Nuevas propiedades
-  minutos      Int      @default(0) // Nuevas propiedades
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  apellido       String
+  calorias       Int      @default(0)
+  entrenamientos Int      @default(0)
+  minutos        Int      @default(0)
+  email          String   @unique  // Agregamos @unique aquí
+  password       String   @default("")
 }
+
+
 
 model Routine {
   id       Int       @id @default(autoincrement())

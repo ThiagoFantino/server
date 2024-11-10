@@ -16,7 +16,7 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Crear un nuevo usuario
   router.post('/', async (req, res) => {
-    const { nombre, apellido, calorias, entrenamientos, minutos } = req.body;
+    const { nombre, apellido, calorias, entrenamientos, minutos, email, password } = req.body;
 
     try {
       const result = await prisma.user.create({
@@ -26,6 +26,8 @@ const UserRoute = (prisma: PrismaClient) => {
           calorias,
           entrenamientos,
           minutos,
+          email,
+          password, // Guardar la contraseña tal cual
         },
       });
       res.json(result);
@@ -35,10 +37,13 @@ const UserRoute = (prisma: PrismaClient) => {
   });
 
   // Obtener un usuario por ID
-  router.get('/1', async (req, res) => {
+  router.get('/:id', async (req, res) => {
+    
+    const { id } = req.params;
+
     try {
       const user = await prisma.user.findUnique({
-        where: { id: 1 },
+        where: { id: parseInt(id) },
       });
       res.json(user);
     } catch (error) {
@@ -47,12 +52,14 @@ const UserRoute = (prisma: PrismaClient) => {
   });
 
   // Actualizar los minutos de un usuario por ID
-  router.put('/1', async (req, res) => {
+  router.put('/:id', async (req, res) => {
     const { minutos, entrenamientos, calorias } = req.body;
+
+    const { id } = req.params;
 
     try {
       const updatedUser = await prisma.user.update({
-        where: { id: 1 },
+        where: { id: parseInt(id) },
         data: {
           minutos, // Actualizar los minutos
           entrenamientos, // Actualizar los entrenamientos

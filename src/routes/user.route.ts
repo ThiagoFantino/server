@@ -108,24 +108,6 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  
-  // Actualizar cualquier campo del usuario
-  router.patch('/:id', async (req, res) => {
-    const { id } = req.params;
-    const updates = req.body; // Datos enviados en el cuerpo de la solicitud
-
-    try {
-      const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) },
-        data: updates, // Aplicar actualizaciones dinámicas
-      });
-      return res.json(updatedUser);
-    } catch (error) {
-      console.error('Error al actualizar el usuario:', error);
-      return res.status(500).json({ error: 'Error al actualizar el usuario.' });
-    }
-  });
-
   return router;
 };
 

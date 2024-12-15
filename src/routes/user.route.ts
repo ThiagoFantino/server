@@ -18,11 +18,20 @@ const UserRoute = (prisma: PrismaClient) => {
   // Crear un nuevo usuario (con encriptación de la contraseña)
   router.post('/signup', async (req, res) => {
     const { nombre, apellido, calorias, entrenamientos, tiempo, email, password } = req.body;
-
+  
     try {
+      // Verificar si el email ya existe
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+  
+      if (existingUser) {
+        return res.status(400).json({ error: 'El email ya está registrado.' });
+      }
+  
       // Encriptar la contraseña antes de guardarla
-      const hashedPassword = await bcrypt.hash(password, 10);  // 10 es el número de rondas de encriptación
-
+      const hashedPassword = await bcrypt.hash(password, 10); // 10 es el número de rondas de encriptación
+  
       // Crear el usuario con la contraseña encriptada
       const result = await prisma.user.create({
         data: {
@@ -32,15 +41,17 @@ const UserRoute = (prisma: PrismaClient) => {
           entrenamientos,
           tiempo,
           email,
-          password: hashedPassword,  // Guardar la contraseña encriptada
+          password: hashedPassword, // Guardar la contraseña encriptada
         },
       });
-
-      res.json(result);
+  
+      res.status(201).json(result);
     } catch (error) {
+      console.error('Error al crear el usuario:', error);
       res.status(500).json({ error: 'Error al crear el usuario.' });
     }
   });
+  
 
   // Obtener un usuario por ID
   router.get('/:id', async (req, res) => {

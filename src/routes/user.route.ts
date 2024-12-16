@@ -69,7 +69,7 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Actualizar los tiempo de un usuario por ID
   router.put('/:id', async (req, res) => {
-    const { tiempo, entrenamientos, calorias, nombre, apellido, email} = req.body;
+    const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture} = req.body;
     const { id } = req.params;
 
     try {
@@ -81,7 +81,8 @@ const UserRoute = (prisma: PrismaClient) => {
           calorias,
           nombre,
           apellido,
-          email
+          email,
+          profilePicture
         },
       });
       res.json(updatedUser);

@@ -30,17 +30,25 @@ model User {
 model Routine {
   id       Int       @id @default(autoincrement())
   name     String
-  image    String
-  exercises Exercise[] @relation("RoutineExercises")
+  image    String?
+  exercises RoutineExercise[]
+  isCustom Boolean @default(false) 
 }
 
 model Exercise {
   id         Int     @id @default(autoincrement())
   name       String
-  image      String
-  sets       Int
+  image      String?
   calorias   Int     @default(0)  // Asignar valor por defecto
-  routineId  Int     // Clave foránea
-  routine    Routine @relation("RoutineExercises", fields: [routineId], references: [id])
+  routines    RoutineExercise[]
 }
 
+model RoutineExercise {
+  id        Int      @id @default(autoincrement())
+  routine   Routine  @relation(fields: [routineId], references: [id])
+  routineId Int
+  exercise  Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int
+  sets      Int      // Personalización: cantidad de sets
+  reps      Int      // Personalización: cantidad de repeticiones
+}

@@ -16,7 +16,7 @@ const RoutineRoute = (prisma: PrismaClient) => {
     const result = await prisma.routine.create({
       data: {
         name,
-        image
+        image, // Este campo es opcional, por lo que puede ser nulo.
       },
     });
     res.json(result);
@@ -26,14 +26,56 @@ const RoutineRoute = (prisma: PrismaClient) => {
   router.get('/:id/exercises', async (req, res) => {
     const { id } = req.params; // Obtener el id de la rutina desde los parámetros de la URL
     const exercises = await prisma.exercise.findMany({
-      where: { routineId: Number(id) } // Asegúrate de convertir el id a número
+      where: { routineId: Number(id) }, // Asegúrate de convertir el id a número
     });
     res.json(exercises);
   });
-  
+
+  // Endpoint para obtener todos los ejercicios
+  router.get('/exercises', async (req, res) => {
+    try {
+      const exercises = await prisma.exercise.findMany({
+        include: {
+          routines: true, // Incluir las rutinas asociadas con los ejercicios
+        },
+      });
+      res.json(exercises);
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+      res.status(500).json({ message: "Error al obtener los ejercicios" });
+    }
+  });
+
+  // Crear una rutina personalizada
+  router.post('/create-custom-routine', async (req, res) => {
+    const { name, userId, exercises, image } = req.body; // Ejercicios incluye { id, sets, reps }
+
+    try {
+      const newRoutine = await prisma.routine.create({
+        data: {
+          name,
+          isCustom: true,
+          image, // La imagen es opcional, si no se pasa, se guardará como null
+          exercises: {
+            create: exercises.map((exercise: any) => ({
+              exercise: { connect: { id: exercise.id } }, // Asociar el ejercicio por ID
+              sets: exercise.sets, // Establecer sets
+              reps: exercise.reps, // Establecer repeticiones
+            })),
+          },
+        },
+      });
+
+      res.status(201).json(newRoutine); // Devolver la rutina recién creada
+    } catch (error) {
+      console.error("Error al crear rutina personalizada:", error);
+      res.status(500).json({ error: 'Error creating custom routine', message: error.message });
+    }
+  });
 
   return router;
 };
 
 export default RoutineRoute;
+
 

@@ -22,13 +22,42 @@ const RoutineRoute = (prisma: PrismaClient) => {
     res.json(result);
   });
 
-  // Obtener ejercicios de la rutina con ID 1
+  // Obtener ejercicios de la rutina con ID específico
   router.get('/:id/exercises', async (req, res) => {
     const { id } = req.params; // Obtener el id de la rutina desde los parámetros de la URL
-    const exercises = await prisma.exercise.findMany({
-      where: { routineId: Number(id) }, // Asegúrate de convertir el id a número
-    });
-    res.json(exercises);
+
+    try {
+      // Obtener la rutina junto con los ejercicios asociados usando la relación
+      const routine = await prisma.routine.findUnique({
+        where: { id: Number(id) },
+        include: {
+          exercises: {
+            include: {
+              exercise: true, // Incluimos los detalles del ejercicio
+            },
+          },
+        },
+      });
+
+      if (!routine) {
+        return res.status(404).json({ message: 'Routine not found' });
+      }
+
+      // Formateamos los datos para enviar solo los necesarios
+      const exercises = routine.exercises.map((routineExercise) => ({
+        id: routineExercise.id,
+        exerciseId: routineExercise.exercise.id,
+        name: routineExercise.exercise.name,
+        image: routineExercise.exercise.image,
+        sets: routineExercise.sets,
+        reps: routineExercise.reps,
+      }));
+
+      return res.json(exercises);
+    } catch (error) {
+      console.error("Error fetching routine exercises:", error);
+      return res.status(500).json({ message: "Error fetching routine exercises" });
+    }
   });
 
   // Endpoint para obtener todos los ejercicios
@@ -77,5 +106,3 @@ const RoutineRoute = (prisma: PrismaClient) => {
 };
 
 export default RoutineRoute;
-
-

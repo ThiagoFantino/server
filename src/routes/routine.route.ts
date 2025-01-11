@@ -6,8 +6,31 @@ const RoutineRoute = (prisma: PrismaClient) => {
 
   // Obtener todas las rutinas
   router.get('/', async (req, res) => {
-    const routines = await prisma.routine.findMany();
-    res.json(routines);
+    try {
+      const { userId } = req.query; // Recibimos el userId como parámetro de consulta
+  
+      // Filtramos las rutinas por 'isCustom' y 'userId' (si aplica)
+      const routines = await prisma.routine.findMany({
+        where: {
+          OR: [
+            { isCustom: false }, // Rutinas predefinidas
+            { isCustom: true, userId: parseInt(userId) }, // Rutinas personalizadas de este usuario
+          ],
+        },
+        include: {
+          exercises: {
+            include: {
+              exercise: true, // Obtener detalles del ejercicio
+            },
+          },
+        },
+      });
+  
+      res.json(routines); // Enviar las rutinas al frontend
+    } catch (error) {
+      console.error("Error fetching routines:", error);
+      res.status(500).json({ message: "Error fetching routines" });
+    }
   });
 
   // Crear una nueva rutina
@@ -80,15 +103,17 @@ const RoutineRoute = (prisma: PrismaClient) => {
   // Crear una rutina personalizada
   router.post('/create-custom-routine', async (req, res) => {
     const { name, userId, exercises, image } = req.body; // Ejercicios incluye { id, sets, reps }
-
+  
     try {
+      // Crear la rutina personalizada con el userId
       const newRoutine = await prisma.routine.create({
         data: {
           name,
           isCustom: true,
           image, // La imagen es opcional, si no se pasa, se guardará como null
+          userId, // Asociar la rutina con el userId del cuerpo de la petición
           exercises: {
-            create: exercises.map((exercise: any) => ({
+            create: exercises.map((exercise) => ({
               exercise: { connect: { id: exercise.id } }, // Asociar el ejercicio por ID
               sets: exercise.sets, // Establecer sets
               reps: exercise.reps, // Establecer repeticiones
@@ -96,13 +121,14 @@ const RoutineRoute = (prisma: PrismaClient) => {
           },
         },
       });
-
+  
       res.status(201).json(newRoutine); // Devolver la rutina recién creada
     } catch (error) {
       console.error("Error al crear rutina personalizada:", error);
       res.status(500).json({ error: 'Error creating custom routine', message: error.message });
     }
   });
+  
 
   return router;
 };

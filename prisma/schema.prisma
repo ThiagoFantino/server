@@ -23,6 +23,7 @@ model User {
   email          String   @unique  // Agregamos @unique aquí
   password       String   @default("")
   profilePicture String @default("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg") // URL de la imagen predeterminada
+  routines       Routine[] @relation("UserRoutines")
 }
 
 
@@ -33,6 +34,8 @@ model Routine {
   image    String?
   exercises RoutineExercise[]
   isCustom Boolean @default(false) 
+  userId   Int?       // Este campo es opcional para rutinas predefinidas
+  user     User?      @relation("UserRoutines", fields: [userId], references: [id])
 }
 
 model Exercise {

@@ -51,7 +51,6 @@ const UserRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error al crear el usuario.' });
     }
   });
-  
 
   // Obtener un usuario por ID
   router.get('/:id', async (req, res) => {
@@ -67,7 +66,7 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  // Actualizar los tiempo de un usuario por ID
+  // Actualizar los datos de un usuario por ID
   router.put('/:id', async (req, res) => {
     const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture } = req.body;
     const { id } = req.params;
@@ -104,9 +103,7 @@ const UserRoute = (prisma: PrismaClient) => {
       console.error('Error al actualizar el usuario:', error);
       res.status(500).json({ error: 'Error al actualizar los datos del usuario.' });
     }
-});
-
-  
+  });
 
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {
@@ -140,7 +137,45 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
+  // Endpoint para obtener las estadísticas del usuario
+  router.get('/:id/stats', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      console.log(`Buscando usuario con ID: ${id}`);
+      const user = await prisma.user.findUnique({
+        where: { id: parseInt(id) },
+      });
+  
+      if (!user) {
+        console.error(`Usuario con ID ${id} no encontrado`);
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      console.log(`Usuario encontrado: ${JSON.stringify(user)}`);
+  
+      const stats = await prisma.userStats.findMany({
+        where: {
+          userId: parseInt(id),
+        },
+        orderBy: {
+          fecha: 'asc',
+        },
+      });
+  
+      console.log(`Estadísticas encontradas: ${JSON.stringify(stats)}`);
+  
+      res.json({ user, stats });
+    } catch (error) {
+      console.error('Error en la consulta:', error);
+      res.status(500).json({ error: 'Error al obtener las estadísticas' });
+    }
+  });
+  
+  
+
   return router;
 };
 
 export default UserRoute;
+

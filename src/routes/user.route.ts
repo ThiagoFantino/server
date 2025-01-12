@@ -117,8 +117,6 @@ const UserRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error al actualizar los datos del usuario o registrar la rutina.' });
     }
   });
-  
-
 
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {
@@ -152,7 +150,7 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
 
-  // Endpoint para obtener las estadísticas del usuario
+  // Endpoint para obtener las estadísticas del usuario (sumadas por fecha)
   router.get('/:id/stats', async (req, res) => {
     const { id } = req.params;
   
@@ -169,18 +167,40 @@ const UserRoute = (prisma: PrismaClient) => {
   
       console.log(`Usuario encontrado: ${JSON.stringify(user)}`);
   
+      // Obtener todas las estadísticas del usuario
       const stats = await prisma.userStats.findMany({
         where: {
           userId: parseInt(id),
         },
         orderBy: {
-          fecha: 'asc',
+          fecha: 'asc',  // Ordenar por fecha
         },
       });
   
-      console.log(`Estadísticas encontradas: ${JSON.stringify(stats)}`);
+      // Agrupar las estadísticas por fecha (en formato local) y sumar los valores
+      const groupedStats = stats.reduce((acc, stat) => {
+        const statDate = new Date(stat.fecha).toLocaleDateString(); // Convertir la fecha a formato local
+        if (!acc[statDate]) {
+          acc[statDate] = {
+            fecha: statDate,
+            tiempo: 0,
+            entrenamientos: 0,
+            calorias: 0,
+          };
+        }
+        acc[statDate].tiempo += stat.tiempo;
+        acc[statDate].entrenamientos += stat.entrenamientos;
+        acc[statDate].calorias += stat.calorias;
   
-      res.json({ user, stats });
+        return acc;
+      }, {});
+  
+      // Convertir el objeto `groupedStats` a un array para enviar la respuesta
+      const statsArray = Object.values(groupedStats);
+  
+      console.log(`Estadísticas agrupadas: ${JSON.stringify(statsArray)}`);
+  
+      res.json({ user, stats: statsArray });
     } catch (error) {
       console.error('Error en la consulta:', error);
       res.status(500).json({ error: 'Error al obtener las estadísticas' });
@@ -188,9 +208,9 @@ const UserRoute = (prisma: PrismaClient) => {
   });
   
   
-
   return router;
 };
 
 export default UserRoute;
+
 

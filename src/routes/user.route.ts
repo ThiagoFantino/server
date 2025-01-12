@@ -263,7 +263,7 @@ const UserRoute = (prisma: PrismaClient) => {
         const filteredStats = statsArray.filter(stat => stat.fecha === fecha);
   
         if (filteredStats.length === 0) {
-          return res.status(404).json({ message: `No se encontraron estadísticas para la fecha: ${fecha}.` });
+          return res.status(200).json({ message: `No se encontraron estadísticas para la fecha: ${fecha}.` });
         }
   
         // Devolver las estadísticas filtradas

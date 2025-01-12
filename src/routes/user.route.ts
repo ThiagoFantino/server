@@ -67,43 +67,79 @@ const UserRoute = (prisma: PrismaClient) => {
   });
 
   // Actualizar los datos de un usuario por ID
-  router.put('/:id', async (req, res) => {
-    const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture } = req.body;
-    const { id } = req.params;
+  // Actualizar los datos de un usuario por ID
+router.put('/:id', async (req, res) => {
+  const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture } = req.body;
+  const { id } = req.params;
 
-    try {
-      // Si se proporciona un email, verificar si ya está en uso por otro usuario (excepto el usuario actual)
-      if (email) {
-        const existingUser = await prisma.user.findUnique({
-          where: { email },
-        });
+  try {
+    // Si se proporciona un email, verificar si ya está en uso por otro usuario (excepto el usuario actual)
+    if (email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
 
-        // Si el email ya está registrado y no es el del usuario actual
-        if (existingUser && existingUser.id !== parseInt(id)) {
-          return res.status(400).json({ error: 'El email ya está registrado.' });
-        }
+      // Si el email ya está registrado y no es el del usuario actual
+      if (existingUser && existingUser.id !== parseInt(id)) {
+        return res.status(400).json({ error: 'El email ya está registrado.' });
       }
+    }
 
-      // Actualizar los datos del usuario
-      const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) },
+    // Actualizar los datos del usuario
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: {
+        tiempo,
+        entrenamientos,
+        calorias,
+        nombre,
+        apellido,
+        email,  // Aquí se actualiza el email solo si se pasó
+        profilePicture,
+      },
+    });
+
+    // Crear o actualizar las estadísticas en UserStats
+    const currentDate = new Date();
+    const existingStats = await prisma.userStats.findFirst({
+      where: {
+        userId: parseInt(id),
+        fecha: currentDate, // Solo la fecha sin la hora
+      },
+    });
+
+    if (existingStats) {
+      // Si ya existe un registro para el usuario en esta fecha, actualizarlo
+      await prisma.userStats.update({
+        where: { id: existingStats.id },
         data: {
+          tiempo: existingStats.tiempo + tiempo, // Sumar el tiempo
+          entrenamientos: existingStats.entrenamientos + entrenamientos, // Sumar entrenamientos
+          calorias: existingStats.calorias + calorias, // Sumar calorías
+        },
+      });
+    } else {
+      // Si no existe un registro para el usuario en esta fecha, crear uno nuevo
+      await prisma.userStats.create({
+        data: {
+          userId: parseInt(id),
+          fecha: currentDate,
           tiempo,
           entrenamientos,
           calorias,
-          nombre,
-          apellido,
-          email,  // Aquí se actualiza el email solo si se pasó
-          profilePicture,
         },
       });
-
-      res.json(updatedUser);
-    } catch (error) {
-      console.error('Error al actualizar el usuario:', error);
-      res.status(500).json({ error: 'Error al actualizar los datos del usuario.' });
     }
-  });
+
+    // Responder con el usuario actualizado
+    res.json(updatedUser);
+
+  } catch (error) {
+    console.error('Error al actualizar el usuario y las estadísticas:', error);
+    res.status(500).json({ error: 'Error al actualizar los datos del usuario y las estadísticas' });
+  }
+});
+
 
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {

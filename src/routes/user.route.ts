@@ -277,6 +277,86 @@ const UserRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error al obtener las estadísticas' });
     }
   });
+
+  router.get('/:id/statsByPeriod', async (req, res) => {
+    const { id } = req.params;
+    const { period } = req.query;  // Recibimos el periodo como parámetro de consulta (día, semana, mes, año)
+    
+    try {
+      console.log(`Buscando estadísticas de usuario con ID: ${id} para el periodo: ${period}`);
+      const user = await prisma.user.findUnique({
+        where: { id: parseInt(id) },
+      });
+  
+      if (!user) {
+        console.error(`Usuario con ID ${id} no encontrado`);
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      console.log(`Usuario encontrado: ${JSON.stringify(user)}`);
+  
+      const stats = await prisma.userStats.findMany({
+        where: {
+          userId: parseInt(id),
+        },
+      });
+  
+      let filteredStats;
+      const today = new Date();
+  
+      switch (period) {
+        case 'today':
+          filteredStats = stats.filter(stat => new Date(stat.fecha).toLocaleDateString() === today.toLocaleDateString());
+          break;
+  
+        case 'week':
+          const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));  // Lunes de la semana
+          filteredStats = stats.filter(stat => new Date(stat.fecha) >= weekStart);
+          break;
+  
+        case 'month':
+          const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+          filteredStats = stats.filter(stat => new Date(stat.fecha).getMonth() === monthStart.getMonth());
+          break;
+  
+        case 'year':
+          const yearStart = new Date(today.getFullYear(), 0, 1);
+          filteredStats = stats.filter(stat => new Date(stat.fecha).getFullYear() === yearStart.getFullYear());
+          break;
+  
+        default:
+          return res.status(400).json({ error: 'Periodo no válido. Usa "today", "week", "month" o "year".' });
+      }
+  
+      // Agrupar las estadísticas por fecha y sumar los valores
+      const groupedStats = filteredStats.reduce((acc, stat) => {
+        const statDate = new Date(stat.fecha).toLocaleDateString();  // Convertir la fecha a formato local
+        if (!acc[statDate]) {
+          acc[statDate] = {
+            fecha: statDate,
+            tiempo: 0,
+            entrenamientos: 0,
+            calorias: 0,
+          };
+        }
+        acc[statDate].tiempo += stat.tiempo;
+        acc[statDate].entrenamientos += stat.entrenamientos;
+        acc[statDate].calorias += stat.calorias;
+  
+        return acc;
+      }, {});
+  
+      // Convertir el objeto groupedStats a un array
+      const statsArray = Object.values(groupedStats);
+  
+      res.json({ user, stats: statsArray });
+  
+    } catch (error) {
+      console.error('Error en la consulta:', error);
+      res.status(500).json({ error: 'Error al obtener las estadísticas' });
+    }
+  });
+  
   
 
 

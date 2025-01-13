@@ -357,12 +357,46 @@ const UserRoute = (prisma: PrismaClient) => {
     }
   });
   
+    // Endpoint para obtener estadísticas totales del usuario
+    router.get('/:id/totalStats', async (req, res) => {
+      const { id } = req.params;
   
-
-
-
-
+      try {
+        // Buscar al usuario por su ID
+        const user = await prisma.user.findUnique({
+          where: { id: parseInt(id) },
+        });
   
+        if (!user) {
+          return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+  
+        // Obtener la suma total de tiempo, entrenamientos y calorías
+        const totalStats = await prisma.userStats.aggregate({
+          _sum: {
+            tiempo: true,
+            entrenamientos: true,
+            calorias: true,
+          },
+          where: {
+            userId: parseInt(id),
+          },
+        });
+  
+        res.json({
+          message: 'Estadísticas totales obtenidas correctamente.',
+          totalStats: {
+            tiempo: totalStats._sum.tiempo || 0,
+            entrenamientos: totalStats._sum.entrenamientos || 0,
+            calorias: totalStats._sum.calorias || 0,
+          },
+        });
+  
+      } catch (error) {
+        console.error('Error al obtener las estadísticas totales:', error);
+        res.status(500).json({ error: 'Error al obtener las estadísticas totales del usuario.' });
+      }
+    });
 
   return router;
 };

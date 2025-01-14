@@ -121,34 +121,37 @@ const UserRoute = (prisma: PrismaClient) => {
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {
     const { email, password } = req.body;
-
+  
     try {
       // Buscar al usuario por el email en la base de datos
       const user = await prisma.user.findUnique({
         where: { email: email },
       });
-
-      if (user) {
-        // Comparar la contraseña proporcionada con la almacenada (encriptada)
-        const isPasswordCorrect = await bcrypt.compare(password, user.password);
-
-        if (isPasswordCorrect) {
-          // Si las contraseñas coinciden, enviar el ID del usuario
-          console.log('Login exitoso');
-          return res.json({ message: 'Login exitoso', userId: user.id });
-        } else {
-          console.log('Credenciales inválidas');
-          return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-        }
+  
+      if (!user) {
+        // Si el usuario no existe, devolver un error específico
+        console.log('Email no encontrado');
+        return res.status(404).json({ error: 'El email no está registrado.' });
+      }
+  
+      // Comparar la contraseña proporcionada con la almacenada (encriptada)
+      const isPasswordCorrect = await bcrypt.compare(password, user.password);
+  
+      if (isPasswordCorrect) {
+        // Si las contraseñas coinciden, enviar el ID del usuario
+        console.log('Login exitoso');
+        return res.json({ message: 'Login exitoso', userId: user.id });
       } else {
-        console.log('Credenciales inválidas');
-        return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+        // Si la contraseña no es correcta
+        console.log('Contraseña incorrecta');
+        return res.status(401).json({ error: 'Contraseña incorrecta.' });
       }
     } catch (error) {
       console.error('Error al verificar el usuario:', error);
       return res.status(500).json({ error: 'Hubo un problema al verificar las credenciales' });
     }
   });
+  
 
   // Endpoint para obtener las estadísticas del usuario (sumadas por fecha)
   router.get('/:id/stats', async (req, res) => {

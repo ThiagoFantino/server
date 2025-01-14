@@ -283,79 +283,95 @@ const UserRoute = (prisma: PrismaClient) => {
     const { period } = req.query;  // Recibimos el periodo como parámetro de consulta (día, semana, mes, año)
     
     try {
-      console.log(`Buscando estadísticas de usuario con ID: ${id} para el periodo: ${period}`);
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(id) },
-      });
-  
-      if (!user) {
-        console.error(`Usuario con ID ${id} no encontrado`);
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-  
-      console.log(`Usuario encontrado: ${JSON.stringify(user)}`);
-  
-      const stats = await prisma.userStats.findMany({
-        where: {
-          userId: parseInt(id),
-        },
-      });
-  
-      let filteredStats;
-      const today = new Date();
-  
-      switch (period) {
-        case 'today':
-          filteredStats = stats.filter(stat => new Date(stat.fecha).toLocaleDateString() === today.toLocaleDateString());
-          break;
-  
-        case 'week':
-          const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));  // Lunes de la semana
-          filteredStats = stats.filter(stat => new Date(stat.fecha) >= weekStart);
-          break;
-  
-        case 'month':
-          const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-          filteredStats = stats.filter(stat => new Date(stat.fecha).getMonth() === monthStart.getMonth());
-          break;
-  
-        case 'year':
-          const yearStart = new Date(today.getFullYear(), 0, 1);
-          filteredStats = stats.filter(stat => new Date(stat.fecha).getFullYear() === yearStart.getFullYear());
-          break;
-  
-        default:
-          return res.status(400).json({ error: 'Periodo no válido. Usa "today", "week", "month" o "year".' });
-      }
-  
-      // Agrupar las estadísticas por fecha y sumar los valores
-      const groupedStats = filteredStats.reduce((acc, stat) => {
-        const statDate = new Date(stat.fecha).toLocaleDateString();  // Convertir la fecha a formato local
-        if (!acc[statDate]) {
-          acc[statDate] = {
-            fecha: statDate,
-            tiempo: 0,
-            entrenamientos: 0,
-            calorias: 0,
-          };
+        console.log(`Buscando estadísticas de usuario con ID: ${id} para el periodo: ${period}`);
+        const user = await prisma.user.findUnique({
+            where: { id: parseInt(id) },
+        });
+
+        if (!user) {
+            console.error(`Usuario con ID ${id} no encontrado`);
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
-        acc[statDate].tiempo += stat.tiempo;
-        acc[statDate].entrenamientos += stat.entrenamientos;
-        acc[statDate].calorias += stat.calorias;
-  
-        return acc;
-      }, {});
-  
-      // Convertir el objeto groupedStats a un array
-      const statsArray = Object.values(groupedStats);
-  
-      res.json({ user, stats: statsArray });
-  
+
+        console.log(`Usuario encontrado: ${JSON.stringify(user)}`);
+
+        const stats = await prisma.userStats.findMany({
+            where: {
+                userId: parseInt(id),
+            },
+        });
+
+        let filteredStats;
+        const today = new Date();
+
+        switch (period) {
+            case 'today':
+                filteredStats = stats.filter(stat => new Date(stat.fecha).toLocaleDateString() === today.toLocaleDateString());
+                break;
+
+            case 'week':
+                // Obtener el lunes de la semana (considerando el cambio de año)
+                const startOfWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Asegura que el lunes sea el primer día de la semana
+                startOfWeek.setDate(today.getDate() + diffToMonday); // Establece el lunes como primer día de la semana
+
+                // Obtener el domingo de la semana
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6); // Domingo de la semana
+
+                filteredStats = stats.filter(stat => {
+                    const statDate = new Date(stat.fecha);
+                    return statDate >= startOfWeek && statDate <= endOfWeek;
+                });
+                break;
+
+            case 'month':
+                const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                filteredStats = stats.filter(stat => {
+                    const statDate = new Date(stat.fecha);
+                    return statDate.getFullYear() === monthStart.getFullYear() && statDate.getMonth() === monthStart.getMonth();
+                });
+                break;
+
+            case 'year':
+                const yearStart = new Date(today.getFullYear(), 0, 1);
+                filteredStats = stats.filter(stat => new Date(stat.fecha).getFullYear() === yearStart.getFullYear());
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Periodo no válido. Usa "today", "week", "month" o "year".' });
+        }
+
+        // Agrupar las estadísticas por fecha y sumar los valores
+        const groupedStats = filteredStats.reduce((acc, stat) => {
+            const statDate = new Date(stat.fecha).toLocaleDateString();  // Convertir la fecha a formato local
+            if (!acc[statDate]) {
+                acc[statDate] = {
+                    fecha: statDate,
+                    tiempo: 0,
+                    entrenamientos: 0,
+                    calorias: 0,
+                };
+            }
+            acc[statDate].tiempo += stat.tiempo;
+            acc[statDate].entrenamientos += stat.entrenamientos;
+            acc[statDate].calorias += stat.calorias;
+
+            return acc;
+        }, {});
+
+        // Convertir el objeto groupedStats a un array
+        const statsArray = Object.values(groupedStats);
+
+        res.json({ user, stats: statsArray });
+
     } catch (error) {
-      console.error('Error en la consulta:', error);
-      res.status(500).json({ error: 'Error al obtener las estadísticas' });
+        console.error('Error en la consulta:', error);
+        res.status(500).json({ error: 'Error al obtener las estadísticas' });
     }
-  });
+});
+
   
     // Endpoint para obtener estadísticas totales del usuario
     router.get('/:id/totalStats', async (req, res) => {

@@ -19,28 +19,50 @@ model User {
   apellido       String
   calorias       Int      @default(0)
   entrenamientos Int      @default(0)
-  tiempo        Int      @default(0)
+  tiempo         Int      @default(0)
   email          String   @unique  // Agregamos @unique aquí
   password       String   @default("")
-  profilePicture String @default("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg") // URL de la imagen predeterminada
+  profilePicture String   @default("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg") // URL de la imagen predeterminada
+  routines       Routine[] @relation("UserRoutines")
+  stats          UserStats[]  // Relación con las estadísticas por fecha
 }
 
+model UserStats {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  fecha         DateTime @default(now())  // Fecha en que se registran las estadísticas
+  entrenamientos Int     @default(0)
+  calorias      Int     @default(0)
+  tiempo        Int     @default(0)  // Tiempo en segundos
+  user          User    @relation(fields: [userId], references: [id])
 
+  @@unique([userId, fecha])  // Asegura que no haya entradas duplicadas por usuario y fecha
+}
 
 model Routine {
   id       Int       @id @default(autoincrement())
   name     String
-  image    String
-  exercises Exercise[] @relation("RoutineExercises")
+  image    String?
+  exercises RoutineExercise[]
+  isCustom Boolean @default(false) 
+  userId   Int?       // Este campo es opcional para rutinas predefinidas
+  user     User?      @relation("UserRoutines", fields: [userId], references: [id])
 }
 
 model Exercise {
   id         Int     @id @default(autoincrement())
   name       String
-  image      String
-  sets       Int
+  image      String?
   calorias   Int     @default(0)  // Asignar valor por defecto
-  routineId  Int     // Clave foránea
-  routine    Routine @relation("RoutineExercises", fields: [routineId], references: [id])
+  routines   RoutineExercise[]
 }
 
+model RoutineExercise {
+  id        Int      @id @default(autoincrement())
+  routine   Routine  @relation(fields: [routineId], references: [id])
+  routineId Int
+  exercise  Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int
+  sets      Int      // Personalización: cantidad de sets
+  reps      Int      // Personalización: cantidad de repeticiones
+}

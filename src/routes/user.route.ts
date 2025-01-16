@@ -84,9 +84,6 @@ const UserRoute = (prisma: PrismaClient) => {
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: {
-          tiempo,
-          entrenamientos,
-          calorias,
           nombre,
           apellido,
           email,
@@ -94,29 +91,37 @@ const UserRoute = (prisma: PrismaClient) => {
         },
       });
   
-      // Registrar la rutina actual en UserStats
-      const currentDateTime = new Date(); // Fecha y hora del registro
-      const newStats = await prisma.userStats.create({
-        data: {
-          userId: parseInt(id),
-          fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
-          tiempo,
-          entrenamientos,
-          calorias,
-        },
-      });
+      // Solo registrar la rutina en UserStats si hay valores nuevos para tiempo, entrenamientos o calorias
+      if (tiempo || entrenamientos || calorias) {
+        const currentDateTime = new Date(); // Fecha y hora del registro
+        const newStats = await prisma.userStats.create({
+          data: {
+            userId: parseInt(id),
+            fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
+            tiempo,
+            entrenamientos,
+            calorias,
+          },
+        });
   
-      res.json({
-        message: 'Datos del usuario actualizados y rutina registrada correctamente.',
-        updatedUser,
-        newStats,
-      });
+        res.json({
+          message: 'Datos del usuario actualizados y rutina registrada correctamente.',
+          updatedUser,
+          newStats,
+        });
+      } else {
+        res.json({
+          message: 'Datos del usuario actualizados correctamente.',
+          updatedUser,
+        });
+      }
   
     } catch (error) {
       console.error('Error al actualizar el usuario y registrar la rutina:', error);
       res.status(500).json({ error: 'Error al actualizar los datos del usuario o registrar la rutina.' });
     }
   });
+  
 
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {

@@ -170,7 +170,32 @@ const RoutineRoute = (prisma: PrismaClient) => {
     }
   });
   
-
+  router.get('/:id/rest-time', async (req, res) => {
+    const { id } = req.params;  // Obtener el ID de la rutina desde los parámetros
+  
+    try {
+      // Obtener la rutina por ID
+      const routine = await prisma.routine.findUnique({
+        where: {
+          id: Number(id), // Convertir el ID a número
+        },
+        select: {
+          restTime: true,  // Solo seleccionamos el campo restTime
+        },
+      });
+  
+      if (!routine) {
+        return res.status(404).json({ error: 'Routine not found' });
+      }
+  
+      // Devolver el restTime
+      res.status(200).json({ restTime: routine.restTime });
+    } catch (error) {
+      console.error("Error al obtener el tiempo de descanso:", error);
+      res.status(500).json({ error: 'Error fetching rest time', message: error.message });
+    }
+  });
+  
   
 
   return router;

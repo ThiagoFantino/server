@@ -128,6 +128,48 @@ const RoutineRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error creating custom routine', message: error.message });
     }
   });
+
+  // Endpoint para eliminar una rutina personalizada
+  router.delete('/:id', async (req, res) => {
+    const { id } = req.params; // Obtener el id de la rutina desde los parámetros de la URL
+  
+    try {
+      // Buscar la rutina por ID
+      const routine = await prisma.routine.findUnique({
+        where: { id: Number(id) },
+      });
+  
+      // Verificar si la rutina existe
+      if (!routine) {
+        return res.status(404).json({ message: 'Routine not found' });
+      }
+  
+      // Verificar que la rutina sea personalizada antes de eliminarla
+      if (!routine.isCustom) {
+        return res.status(400).json({ message: 'Cannot delete predefined routine' });
+      }
+  
+      // Eliminar los ejercicios asociados a la rutina (si los hay)
+      await prisma.routineExercise.deleteMany({
+        where: {
+          routineId: Number(id),
+        },
+      });
+  
+      // Eliminar la rutina
+      await prisma.routine.delete({
+        where: { id: Number(id) },
+      });
+  
+      // Enviar respuesta de éxito
+      res.status(200).json({ message: 'Routine deleted successfully' });
+    } catch (error) {
+      console.error("Error deleting routine:", error);
+      res.status(500).json({ message: "Error deleting routine" });
+    }
+  });
+  
+
   
 
   return router;

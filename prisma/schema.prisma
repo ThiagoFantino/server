@@ -32,7 +32,7 @@ model UserStats {
   userId        Int
   fecha         DateTime @default(now())  // Fecha en que se registran las estadísticas
   entrenamientos Int     @default(0)
-  calorias      Int     @default(0)
+  calorias      Float     @default(0.0)
   tiempo        Int     @default(0)  // Tiempo en segundos
   user          User    @relation(fields: [userId], references: [id])
 
@@ -53,7 +53,7 @@ model Exercise {
   id         Int     @id @default(autoincrement())
   name       String
   image      String?
-  calorias   Int     @default(0)  // Asignar valor por defecto
+  calorias   Float     @default(0.0)  // Asignar valor por defecto
   routines   RoutineExercise[]
 }
 

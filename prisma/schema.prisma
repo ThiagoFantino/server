@@ -40,13 +40,14 @@ model UserStats {
 }
 
 model Routine {
-  id       Int       @id @default(autoincrement())
-  name     String
-  image    String?
+  id        Int                 @id @default(autoincrement())
+  name      String
+  image     String?
   exercises RoutineExercise[]
-  isCustom Boolean @default(false) 
-  userId   Int?       // Este campo es opcional para rutinas predefinidas
-  user     User?      @relation("UserRoutines", fields: [userId], references: [id])
+  isCustom  Boolean             @default(false)
+  userId    Int?                // Este campo es opcional para rutinas predefinidas
+  user      User?               @relation("UserRoutines", fields: [userId], references: [id])
+  restTime  Int                 @default(0) // Nuevo campo con valor predeterminado 0
 }
 
 model Exercise {

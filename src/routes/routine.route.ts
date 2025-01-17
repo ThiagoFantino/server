@@ -102,7 +102,7 @@ const RoutineRoute = (prisma: PrismaClient) => {
 
   // Crear una rutina personalizada
   router.post('/create-custom-routine', async (req, res) => {
-    const { name, userId, exercises, image } = req.body; // Ejercicios incluye { id, sets, reps }
+    const { name, userId, exercises, image, restTime } = req.body; // Ejercicios incluye { id, sets, reps }
   
     try {
       // Crear la rutina personalizada con el userId
@@ -112,6 +112,7 @@ const RoutineRoute = (prisma: PrismaClient) => {
           isCustom: true,
           image, // La imagen es opcional, si no se pasa, se guardará como null
           userId, // Asociar la rutina con el userId del cuerpo de la petición
+          restTime: restTime,
           exercises: {
             create: exercises.map((exercise) => ({
               exercise: { connect: { id: exercise.id } }, // Asociar el ejercicio por ID

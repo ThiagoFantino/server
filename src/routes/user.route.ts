@@ -17,7 +17,7 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Crear un nuevo usuario (con encriptación de la contraseña)
   router.post('/signup', async (req, res) => {
-    const { nombre, apellido, calorias, entrenamientos, tiempo, email, password } = req.body;
+    const { nombre, apellido, email, password } = req.body;
   
     try {
       // Verificar si el email ya existe
@@ -37,9 +37,6 @@ const UserRoute = (prisma: PrismaClient) => {
         data: {
           nombre,
           apellido,
-          calorias,
-          entrenamientos,
-          tiempo,
           email,
           password: hashedPassword, // Guardar la contraseña encriptada
         },

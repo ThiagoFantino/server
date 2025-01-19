@@ -17,7 +17,7 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Crear un nuevo usuario (con encriptación de la contraseña)
   router.post('/signup', async (req, res) => {
-    const { nombre, apellido, calorias, entrenamientos, tiempo, email, password } = req.body;
+    const { nombre, apellido, email, password } = req.body;
   
     try {
       // Verificar si el email ya existe
@@ -37,9 +37,6 @@ const UserRoute = (prisma: PrismaClient) => {
         data: {
           nombre,
           apellido,
-          calorias,
-          entrenamientos,
-          tiempo,
           email,
           password: hashedPassword, // Guardar la contraseña encriptada
         },
@@ -84,9 +81,6 @@ const UserRoute = (prisma: PrismaClient) => {
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: {
-          tiempo,
-          entrenamientos,
-          calorias,
           nombre,
           apellido,
           email,
@@ -94,29 +88,37 @@ const UserRoute = (prisma: PrismaClient) => {
         },
       });
   
-      // Registrar la rutina actual en UserStats
-      const currentDateTime = new Date(); // Fecha y hora del registro
-      const newStats = await prisma.userStats.create({
-        data: {
-          userId: parseInt(id),
-          fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
-          tiempo,
-          entrenamientos,
-          calorias,
-        },
-      });
+      // Solo registrar la rutina en UserStats si hay valores nuevos para tiempo, entrenamientos o calorias
+      if (tiempo || entrenamientos || calorias) {
+        const currentDateTime = new Date(); // Fecha y hora del registro
+        const newStats = await prisma.userStats.create({
+          data: {
+            userId: parseInt(id),
+            fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
+            tiempo,
+            entrenamientos,
+            calorias,
+          },
+        });
   
-      res.json({
-        message: 'Datos del usuario actualizados y rutina registrada correctamente.',
-        updatedUser,
-        newStats,
-      });
+        res.json({
+          message: 'Datos del usuario actualizados y rutina registrada correctamente.',
+          updatedUser,
+          newStats,
+        });
+      } else {
+        res.json({
+          message: 'Datos del usuario actualizados correctamente.',
+          updatedUser,
+        });
+      }
   
     } catch (error) {
       console.error('Error al actualizar el usuario y registrar la rutina:', error);
       res.status(500).json({ error: 'Error al actualizar los datos del usuario o registrar la rutina.' });
     }
   });
+  
 
   // Ruta para login (con verificación de contraseña)
   router.post('/login', async (req, res) => {

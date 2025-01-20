@@ -326,6 +326,7 @@ const UserRoute = (prisma: PrismaClient) => {
                 endOfWeek.setDate(startOfWeek.getDate() + 6); // Domingo de la semana
 
                 filteredStats = stats.filter(stat => {
+                    startOfWeek.setHours(0, 0, 0, 0);
                     const statDate = new Date(stat.fecha);
                     return statDate >= startOfWeek && statDate <= endOfWeek;
                 });

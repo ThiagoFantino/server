@@ -161,6 +161,59 @@ const RoutineRoute = (prisma: PrismaClient) => {
     }
   });
 
+  router.post('/create-custom-routineAI', async (req, res) => {
+    const { name, userId, prompt, image, restTime } = req.body; // Solicitud con nombre, usuario, detalles del prompt
+    const exercises = []; // Array para guardar los ejercicios
+  
+    try {
+      // Supongamos que el prompt tiene el formato "1 serie de 20 saltos de tijera"
+      const exerciseDetails = prompt.match(/(\d+)\s*serie[s]?\s*de\s*(\d+)\s*(.*)/i);
+      if (exerciseDetails) {
+        const sets = parseInt(exerciseDetails[1], 10); // Extraer la cantidad de series
+        const reps = parseInt(exerciseDetails[2], 10); // Extraer las repeticiones
+        const exerciseName = exerciseDetails[3].trim().toUpperCase(); // Extraer el nombre del ejercicio
+
+        // Buscar el ejercicio en la base de datos
+        const exercise = await prisma.exercise.findFirst({
+          where: { name: exerciseName },
+        });
+  
+        if (exercise) {
+          // Si el ejercicio se encuentra en la base de datos, lo agregamos a la rutina
+          exercises.push({
+            exercise: { connect: { id: exercise.id } },
+            sets,
+            reps,
+          });
+        } else {
+          return res.status(400).json({ error: 'Ejercicio no encontrado en la base de datos.' });
+        }
+      } else {
+        return res.status(400).json({ error: 'El formato del prompt no es válido.' });
+      }
+  
+      // Crear la rutina personalizada con los ejercicios
+      const newRoutine = await prisma.routine.create({
+        data: {
+          name,
+          isCustom: true,
+          image: "https://img.freepik.com/fotos-premium/atleta-esta-parado-sobre-sus-rodillas-cerca-barra-gimnasio-esta-preparando-hacer-peso-muerto_392761-1698.jpg?w=1060",
+          userId,
+          restTime,
+          exercises: {
+            create: exercises, // Crear los ejercicios asociados
+          },
+        },
+      });
+  
+      res.status(201).json(newRoutine); // Devolver la rutina recién creada
+    } catch (error) {
+      console.error("Error al crear rutina personalizada:", error);
+      res.status(500).json({ error: 'Error creando rutina personalizada', message: error.message });
+    }
+  });
+  
+
   // Endpoint para eliminar una rutina personalizada
   router.delete('/:id', async (req, res) => {
     const { id } = req.params; // Obtener el id de la rutina desde los parámetros de la URL

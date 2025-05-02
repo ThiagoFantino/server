@@ -4,18 +4,36 @@ import { Router } from "express";
 const RoutineRoute = (prisma: PrismaClient) => {
   const router = Router();
 
-  router.post('/chatbot', (req, res) => {
-    const { message } = req.body;
-
-    // Respuestas del chatbot basadas en el mensaje
-    if (message.includes('ejercicio')) {
-      res.json({ reply: '¡Claro! ¿Qué tipo de ejercicio prefieres? Cardio, fuerza, o estiramientos?' });
-    } else if (message.includes('Cardio')) {
-      res.json({ reply: 'Aqui tienes tu rutina de cardio' });
-    } else {
-      res.json({ reply: 'Lo siento, no entendí. ¿Podrías preguntar de nuevo?' });
+  router.get('/buscar', async (req, res) => {
+    const { zona } = req.query;
+  
+    if (!zona || typeof zona !== 'string') {
+      return res.status(400).json({ error: 'Zona es requerida' });
     }
-  });
+  
+    try {
+      const rutinas = await prisma.routine.findMany({
+        where: {
+          name: {
+            contains: zona,
+            mode: 'insensitive',
+          },
+        },
+        include: {
+          exercises: {
+            include: {
+              exercise: true,
+            },
+          },
+        },
+      });
+  
+      res.json(rutinas);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });  
 
   // Obtener todas las rutinas
   router.get('/', async (req, res) => {

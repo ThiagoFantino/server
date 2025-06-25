@@ -4,6 +4,37 @@ import { Router } from "express";
 const RoutineRoute = (prisma: PrismaClient) => {
   const router = Router();
 
+  router.get('/buscar', async (req, res) => {
+    const { zona } = req.query;
+  
+    if (!zona || typeof zona !== 'string') {
+      return res.status(400).json({ error: 'Zona es requerida' });
+    }
+  
+    try {
+      const rutinas = await prisma.routine.findMany({
+        where: {
+          name: {
+            contains: zona,
+            mode: 'insensitive',
+          },
+        },
+        include: {
+          exercises: {
+            include: {
+              exercise: true,
+            },
+          },
+        },
+      });
+  
+      res.json(rutinas);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });  
+
   // Obtener todas las rutinas
   router.get('/', async (req, res) => {
     try {
@@ -129,6 +160,55 @@ const RoutineRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error creating custom routine', message: error.message });
     }
   });
+
+  router.post("/create-custom-routineAI", async (req, res) => {
+    const { name, userId, restTime, image, exercises } = req.body;
+  
+    try {
+      if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+        return res.status(400).json({ error: "Debes enviar una lista de ejercicios válidos." });
+      }
+  
+      // Validar que todos tengan los datos necesarios
+      for (const ex of exercises) {
+        if (!ex.id || !ex.sets || !ex.reps) {
+          return res.status(400).json({ error: "Cada ejercicio debe tener id, sets y reps." });
+        }
+      }
+  
+      const newRoutine = await prisma.routine.create({
+        data: {
+          name,
+          userId,
+          restTime,
+          isCustom: true,
+          image: image || null,
+          exercises: {
+            create: exercises.map((ex) => ({
+              exercise: { connect: { id: ex.id } },
+              sets: ex.sets,
+              reps: ex.reps,
+            })),
+          },
+        },
+        include: {
+          exercises: {
+            include: { exercise: true },
+          },
+        },
+      });
+  
+      res.status(201).json(newRoutine);
+    } catch (error) {
+      console.error("Error al crear rutina personalizada:", error);
+      res.status(500).json({
+        error: "Error creando rutina personalizada",
+        message: error.message,
+      });
+    }
+  });
+  
+  
 
   // Endpoint para eliminar una rutina personalizada
   router.delete('/:id', async (req, res) => {

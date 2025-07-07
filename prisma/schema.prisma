@@ -25,16 +25,20 @@ model User {
 }
 
 model UserStats {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  fecha         DateTime @default(now())  // Fecha en que se registran las estadísticas
-  entrenamientos Int     @default(0)
-  calorias      Float     @default(0.0)
-  tiempo        Int     @default(0)  // Tiempo en segundos
-  user          User    @relation(fields: [userId], references: [id])
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  fecha          DateTime @default(now())
+  entrenamientos Int      @default(0)
+  calorias       Float    @default(0.0)
+  tiempo         Int      @default(0)
+  routineId      Int?     // relación con Routine
 
-  @@unique([userId, fecha])  // Asegura que no haya entradas duplicadas por usuario y fecha
+  user           User     @relation(fields: [userId], references: [id])
+  routine        Routine? @relation(fields: [routineId], references: [id])
+
+  @@unique([userId, fecha])
 }
+
 
 model Routine {
   id        Int                 @id @default(autoincrement())
@@ -45,6 +49,7 @@ model Routine {
   userId    Int?                // Este campo es opcional para rutinas predefinidas
   user      User?               @relation("UserRoutines", fields: [userId], references: [id])
   restTime  Int                 @default(0) // Nuevo campo con valor predeterminado 0
+  userStats UserStats[]       // Relación con las estadísticas de usuario
 }
 
 model Exercise {

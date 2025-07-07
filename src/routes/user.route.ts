@@ -65,59 +65,60 @@ const UserRoute = (prisma: PrismaClient) => {
 
   // Actualizar los datos de un usuario por ID
   router.put('/:id', async (req, res) => {
-    const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture } = req.body;
-    const { id } = req.params;
-  
-    try {
-      // Verificar si el email ya está en uso por otro usuario
-      if (email) {
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser && existingUser.id !== parseInt(id)) {
-          return res.status(400).json({ error: 'El email ya está registrado.' });
-        }
+  const { tiempo, entrenamientos, calorias, nombre, apellido, email, profilePicture, routineId } = req.body;
+  const { id } = req.params;
+
+  try {
+    // Verificar si el email ya está en uso por otro usuario
+    if (email) {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser && existingUser.id !== parseInt(id)) {
+        return res.status(400).json({ error: 'El email ya está registrado.' });
       }
-  
-      // Actualizar datos generales del usuario si son enviados
-      const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) },
+    }
+
+    // Actualizar datos generales del usuario si son enviados
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: {
+        nombre,
+        apellido,
+        email,
+        profilePicture,
+      },
+    });
+
+    // Registrar la rutina en UserStats si hay valores nuevos para tiempo, entrenamientos o calorias
+    if (tiempo || entrenamientos || calorias) {
+      const currentDateTime = new Date(); // Fecha y hora del registro
+      const newStats = await prisma.userStats.create({
         data: {
-          nombre,
-          apellido,
-          email,
-          profilePicture,
+          userId: parseInt(id),
+          fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
+          tiempo,
+          entrenamientos,
+          calorias,
+          routineId,  // <-- guardar routineId aquí (asegúrate que Prisma lo soporta)
         },
       });
-  
-      // Solo registrar la rutina en UserStats si hay valores nuevos para tiempo, entrenamientos o calorias
-      if (tiempo || entrenamientos || calorias) {
-        const currentDateTime = new Date(); // Fecha y hora del registro
-        const newStats = await prisma.userStats.create({
-          data: {
-            userId: parseInt(id),
-            fecha: currentDateTime, // Se registra con fecha completa incluyendo la hora
-            tiempo,
-            entrenamientos,
-            calorias,
-          },
-        });
-  
-        res.json({
-          message: 'Datos del usuario actualizados y rutina registrada correctamente.',
-          updatedUser,
-          newStats,
-        });
-      } else {
-        res.json({
-          message: 'Datos del usuario actualizados correctamente.',
-          updatedUser,
-        });
-      }
-  
-    } catch (error) {
-      console.error('Error al actualizar el usuario y registrar la rutina:', error);
-      res.status(500).json({ error: 'Error al actualizar los datos del usuario o registrar la rutina.' });
+
+      res.json({
+        message: 'Datos del usuario actualizados y rutina registrada correctamente.',
+        updatedUser,
+        newStats,
+      });
+    } else {
+      res.json({
+        message: 'Datos del usuario actualizados correctamente.',
+        updatedUser,
+      });
     }
-  });
+  } catch (error) {
+    console.error('Error al actualizar el usuario y registrar la rutina:', error);
+    res.status(500).json({ error: 'Error al actualizar los datos del usuario o registrar la rutina.' });
+  }
+});
+
   
 
   // Ruta para login (con verificación de contraseña)
@@ -282,6 +283,77 @@ const UserRoute = (prisma: PrismaClient) => {
       res.status(500).json({ error: 'Error al obtener las estadísticas' });
     }
   });
+
+  router.get('/:id/routinesByDate', async (req, res) => {
+  const { id } = req.params;
+  const { fecha } = req.query;  // Fecha opcional: 'dd/mm/yyyy' o 'yyyy-mm-dd'
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Trae stats con rutina asociada
+    const stats = await prisma.userStats.findMany({
+      where: {
+        userId: parseInt(id),
+      },
+      orderBy: {
+        fecha: 'asc',
+      },
+      include: {
+        routine: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      }
+    });
+
+    // Agrupa: { 'dd/mm/yyyy': ['Rutina 1', 'Rutina 2'] }
+    const grouped = stats.reduce((acc, stat) => {
+      const statDate = new Date(stat.fecha).toLocaleDateString();
+
+      if (stat.routine) {
+        if (!acc[statDate]) {
+          acc[statDate] = [];
+        }
+
+        const yaExiste = acc[statDate].includes(stat.routine.name);
+        if (!yaExiste) {
+          acc[statDate].push(stat.routine.name);
+        }
+      }
+
+      return acc;
+    }, {});
+
+    // Si se pidió una fecha específica
+    if (fecha) {
+      const result = grouped[fecha];
+      if (!result || result.length === 0) {
+        return res.status(200).json({ message: `No se encontraron rutinas para la fecha: ${fecha}.` });
+      }
+
+      return res.json({ [fecha]: result });
+    }
+
+    // Si no se pidió fecha, devolver todas agrupadas
+    return res.json(grouped);
+
+  } catch (error) {
+    console.error('Error en la consulta:', error);
+    return res.status(500).json({ error: 'Error al obtener las rutinas' });
+  }
+});
+
+
+
 
   router.get('/:id/statsByPeriod', async (req, res) => {
     const { id } = req.params;
